@@ -14,24 +14,35 @@ jobs:
       - name: Extract project ZIP
         run: |
           mkdir -p app_source
-          unzip -o FashionAutoAI_MVP_0.1.zip -d app_source
+          unzip -q FashionAutoAI_MVP_0.1.zip -d app_source
 
       - name: Find Android project
         run: |
+          echo "Searching for Gradle project..."
           find app_source -name gradlew -type f
 
       - name: Make Gradle executable
         run: |
-          chmod +x $(find app_source -name gradlew -type f | head -1)
+          GRADLEW=$(find app_source -name gradlew -type f | head -1)
+          if [ -z "$GRADLEW" ]; then
+            echo "ERROR: gradlew not found"
+            exit 1
+          fi
+          chmod +x "$GRADLEW"
 
       - name: Build APK
         run: |
           GRADLEW=$(find app_source -name gradlew -type f | head -1)
-          cd "$(dirname "$GRADLEW")"
+          if [ -z "$GRADLEW" ]; then
+            echo "ERROR: gradlew not found"
+            exit 1
+          fi
+          PROJECT_DIR=$(dirname "$GRADLEW")
+          cd "$PROJECT_DIR"
           ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: FashionAutoAI-debug-APK
-          path: app_source/**/build/outputs/apk/**/*.apk
+          name: FashionAutoAI-debug
+          path: app_source/**/build/outputs/apk/debug/*.apk
